@@ -13,11 +13,12 @@ def combine_images(images):
     w = 512; h = 128
     result = PIL.Image.new(mode = "RGBA", size = (w, h))
 
-    global_scale = len(images) // 3
+    global_scale = 1 + ((len(images) - 1) // 3)
 
     for i, img in enumerate(images):
         # Image should be resized such that its height is h / global_scale.
         iw, ih  = img.size
+
         scale   = h / (ih * global_scale)
         resized = img.resize((int(iw * scale), int(ih * scale)), PIL.Image.LANCZOS)
 
