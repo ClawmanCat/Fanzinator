@@ -49,6 +49,11 @@ def command_fanzinate(update, context):
         update.message.reply_text(f'Error: { str(e) }')
 
 
+def command_get_hash(update, context):
+    arg_hash = hashlib.md5(' '.join(context.args).encode('utf8')).hexdigest()
+    update.message.reply_text(f'Result will be hashed as: {arg_hash}')
+
+
 def command_list_fanzlets(update, context):
     result = []
     for img_path in os.listdir('./assets'):
@@ -86,6 +91,7 @@ def main():
     add_command(dispatcher, 'fanzinate',      command_fanzinate)
     add_command(dispatcher, 'list_fanzlets',  command_list_fanzlets)
     add_command(dispatcher, 'make_stickling', command_make_sticker)
+    add_command(dispatcher, 'hash_of',        command_get_hash)
     add_conversation(dispatcher, add_fanzlet.make_handler())
 
     updater.start_polling()
