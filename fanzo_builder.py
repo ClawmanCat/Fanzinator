@@ -11,21 +11,21 @@ def flip_image(img):
 
 def combine_images(images):
     w = 512; h = 128
-
-    if len(images) > 3: w = 1024
-    if len(images) > 6: raise RuntimeError('At most 6 images may be combined.')
-
     result = PIL.Image.new(mode = "RGBA", size = (w, h))
 
+    global_scale = len(images) // 3
+
     for i, img in enumerate(images):
+        # Image should be resized such that its height is h / global_scale.
         iw, ih  = img.size
-        scale   = h / ih
-        resized = img.resize((int(iw * scale), h), PIL.Image.LANCZOS)
+        scale   = h / (ih * global_scale)
+        resized = img.resize((int(iw * scale), int(ih * scale)), PIL.Image.LANCZOS)
 
         center = ((i + 1) / (len(images) + 1)) * w
-        left   = int(center - (resized.size[1] / 2))
+        left   = int(center - (resized.size[0] / 2))
+        top    = int(0.5 * h) - int(0.5 * resized.size[1])
 
-        result.paste(resized, (left, 0))
+        result.paste(resized, (left, top))
 
     return result
 
