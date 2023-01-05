@@ -30,13 +30,13 @@ def add_conversation(dispatcher, handler):
     dispatcher.add_handler(handler)
 
 
-def command_fanzinate(update, context):
+def command_build_image_common(update, context, make_image_fn):
     try:
         arg_hash  = hashlib.md5(' '.join(context.args).encode('utf8')).hexdigest()
         dest_path = f'./assets/hs_{arg_hash}.png'
 
         if not os.path.exists(dest_path):
-            img = builder.parse_and_combine(context.args)
+            img = make_image_fn(context.args)
             img.save(dest_path)
 
         with open(dest_path, 'rb') as handle:
@@ -47,6 +47,14 @@ def command_fanzinate(update, context):
         print(traceback.format_exc())
 
         update.message.reply_text(f'Error: { str(e) }')
+
+
+def command_fanzinate(update, context):
+    command_build_image_common(update, context, builder.make_fanzination)
+
+
+def command_sofa_fanzinate(update, context):
+    command_build_image_common(update, context, builder.make_sofa_fanzination)
 
 
 def command_get_hash(update, context):
@@ -89,6 +97,7 @@ def main():
     dispatcher = updater.dispatcher
 
     add_command(dispatcher, 'fanzinate',      command_fanzinate)
+    add_command(dispatcher, 'sofanate',       command_sofa_fanzinate)
     add_command(dispatcher, 'list_fanzlets',  command_list_fanzlets)
     add_command(dispatcher, 'make_stickling', command_make_sticker)
     add_command(dispatcher, 'hash_of',        command_get_hash)
