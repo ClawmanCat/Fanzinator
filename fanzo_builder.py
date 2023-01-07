@@ -55,8 +55,9 @@ def find_image(target_name):
 
 
 def make_sofa(on_sofa):
-    sit_offset  = 250
+    sit_offset  = 260
     edge_offset = 80
+    character_h = 220
 
 
     num_segments = len(on_sofa)
@@ -77,25 +78,38 @@ def make_sofa(on_sofa):
         )
     )
 
-    total_offset = 0
-    for i in range(num_segments):
-        if   i == 0:                current_segment = segment_images[0]
-        elif i == num_segments - 1: current_segment = segment_images[2]
-        else:                       current_segment = segment_images[1]
 
-        if   i == 0:                total_offset += 0
-        elif i == 1:                total_offset += segment_offsets[0]
-        elif i == num_segments - 1: total_offset += segment_offsets[2]
-        else:                       total_offset += segment_offsets[1]
+    for layer in ['background', 'foreground']:
+        total_offset = 0
 
-        fanzination_offset_w = total_offset + int(current_segment.size[0] / 2) - int(on_sofa[i].size[0] / 2)
-        if i == 0: fanzination_offset_w += edge_offset
-        if i == num_segments - 1: fanzination_offset_w -= edge_offset
+        for i in range(num_segments):
+            # Segment is middle couch except for first and last image.
+            if   i == 0:                current_segment = segment_images[0]
+            elif i == num_segments - 1: current_segment = segment_images[2]
+            else:                       current_segment = segment_images[1]
 
-        fanzination_offset_h = sit_offset - on_sofa[i].size[1]
+            # Offset is that of the previous sofa piece, or zero if there was none.
+            if   i == 0:                total_offset += 0
+            elif i == 1:                total_offset += segment_offsets[0]
+            elif i == num_segments - 1: total_offset += segment_offsets[2]
+            else:                       total_offset += segment_offsets[1]
 
-        result = composite_paste(result, current_segment, (total_offset, 0))
-        result = composite_paste(result, on_sofa[i], (fanzination_offset_w, fanzination_offset_h))
+            # Fanzination can exceed the bounds of the sofa segment so we need to make sure to generate all segments first.
+            if layer == 'background':
+                result = composite_paste(result, current_segment, (total_offset, 0))
+            else:
+                fanzination_resize_w = int(on_sofa[i].size[0] * (character_h / on_sofa[i].size[1]))
+                on_sofa[i] = on_sofa[i].resize((fanzination_resize_w, character_h), PIL.Image.LANCZOS)
+
+                fanzination_offset_w = total_offset + int(current_segment.size[0] / 2) - int(on_sofa[i].size[0] / 2)
+                if i == 0: fanzination_offset_w += edge_offset
+                if i == num_segments - 1: fanzination_offset_w -= edge_offset
+
+                fanzination_offset_h = sit_offset - on_sofa[i].size[1]
+
+
+                result = composite_paste(result, on_sofa[i], (fanzination_offset_w, fanzination_offset_h))
+
 
     return result
 
@@ -119,6 +133,7 @@ def make_sofa_fanzination(args):
     behind_sofa = []
     current_on_sofa = None
 
+
     for arg in args:
         if   arg == 'front': current_on_sofa = True
         elif arg == 'back':  current_on_sofa = False
@@ -130,6 +145,14 @@ def make_sofa_fanzination(args):
             else: behind_sofa.append(img)
         else:
             RuntimeError('Fanzinations must be preceded by "front" to put them on the couch, or "back" to put them behind it.')
+
+
+    # At least 3 segments required for sofa, so just pad with empty characters.
+    empty = PIL.Image.open(find_image('empty'))
+
+    if   len(on_sofa) == 0: on_sofa = [empty] * 3
+    elif len(on_sofa) < 3:  on_sofa = [empty, *on_sofa, empty]
+
 
     sofa_image = make_sofa(on_sofa)
     background = combine_images(behind_sofa)
