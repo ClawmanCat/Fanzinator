@@ -1,5 +1,5 @@
 import telegram.error
-from telegram import error
+from telegram import error, StickerSet
 from serialized_dict import serialized_dict
 
 
@@ -12,7 +12,21 @@ def stickerpack_raw_name(update, bot, index):
 
 
 def get_stickerpack(bot, raw_name):
-    return bot.get_sticker_set(raw_name)
+    # bot.get_sticker_set(raw_name) is broken due to Telegram API changes.
+    # Updating to a new version of python_telegram_bot would require rewriting the entire bot, as it has very thoroughly changed.
+    # Instead, just make the API request manually.
+    resp = bot._request.post(
+        f"{bot.base_url}/getStickerSet",
+        {
+            "name": raw_name,
+        },
+    )
+
+    resp['is_animated'] = False
+    resp['is_video'] = False
+
+    return StickerSet.de_json(resp, bot)
+    # return bot.get_sticker_set(raw_name)
 
 
 def is_stickerpack_full(bot, raw_name):
